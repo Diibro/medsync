@@ -1,0 +1,14 @@
+// Module: audit — see docs/DB.md. Append-only compliance trail. No update/delete path is exposed
+// through the app; rows are written by lib/audit and never touched again.
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  actorRole String
+  action    String
+  targetId  String?
+  metadata  Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}

@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: medsync
+      POSTGRES_PASSWORD: medsync
+      POSTGRES_DB: medsync
+    ports:
+      - "5433:5432"
+    volumes:
+      - medsync_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medsync"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Three independent HAPI FHIR R4 servers standing in for three hospitals' real systems — each
+  # keeps its own in-memory data (default H2), so it starts empty on every `docker compose up` and
+  # needs `npm run seed:hospitals` to populate it. See docs/USAGE.md "Hospital data".
+  hospital-a:
+    image: hapiproject/hapi:latest
+    ports:
+      - "5101:8080"
+
+  hospital-b:
+    image: hapiproject/hapi:latest
+    ports:
+      - "5102:8080"
+
+  hospital-c:
+    image: hapiproject/hapi:latest
+    ports:
+      - "5103:8080"
+
+  # One-off patient generator (MITRE Synthea) — not a long-running service. Invoked by
+  # `npm run seed:hospitals` via `docker compose run --rm synthea <state> <city> ...` once per
+  # hospital, writing FHIR bundles into ./docker/synthea/output/<hospital>/fhir for the loader
+  # script to then POST into the matching hospital-a/b/c server above.
+  synthea:
+    build: ./docker/synthea
+    volumes:
+      - ./docker/synthea/output:/synthea/output
+    profiles:
+      - tools
+
+volumes:
+  medsync_db_data:

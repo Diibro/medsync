@@ -1,0 +1,37 @@
+// Module: ai — see docs/DB.md. Everything the AI service layer produces, kept separate from
+// clinician-authored data. Rule-based checks (lib/ai/rules.ts) don't need to persist anything to
+// answer a request, but every generated insight is logged here for audit/traceability; OcrJob
+// tracks a document through the (optional, key-gated) extraction pipeline — see lib/ai/ocr.ts.
+
+enum InsightKind {
+  DRUG_CONFLICT
+  TREND
+}
+
+model AiInsight {
+  id          String      @id @default(cuid())
+  patientId   String
+  patient     Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  kind        InsightKind
+  severity    String?
+  payload     Json
+  generatedAt DateTime    @default(now())
+}
+
+enum OcrStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  NOT_CONFIGURED
+}
+
+model OcrJob {
+  id          String    @id @default(cuid())
+  documentId  String    @unique
+  document    Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  status      OcrStatus
+  draft       Json?
+  error       String?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+}

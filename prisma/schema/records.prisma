@@ -1,0 +1,74 @@
+// Module: records — see docs/DB.md. Everything that shows up in the patient's timeline.
+
+enum RecordType {
+  DIAGNOSIS
+  PRESCRIPTION
+  LAB_REPORT
+  PROCEDURE
+  VACCINATION
+}
+
+enum RecordSource {
+  HOSPITAL_SYNC
+  DOCTOR_MANUAL
+  PATIENT_MANUAL
+}
+
+model MedicalRecord {
+  id                 String         @id @default(cuid())
+  patientId          String
+  patient            Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  type               RecordType
+  source             RecordSource
+  title              String
+  description        String?
+  dosage             String?
+  duration           String?
+  tags               String[]
+  doctorName         String?
+  authoredByDoctorId String?
+  authoredByDoctor   DoctorProfile? @relation(fields: [authoredByDoctorId], references: [id])
+  hospitalId         String?
+  hospital           Hospital?      @relation(fields: [hospitalId], references: [id])
+  externalRecordRef  String?
+  documentId         String?        @unique
+  document           Document?      @relation(fields: [documentId], references: [id])
+  occurredAt         DateTime
+  createdAt          DateTime       @default(now())
+}
+
+model Document {
+  id           String   @id @default(cuid())
+  patientId    String
+  patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  fileName     String
+  storageKey   String
+  mimeType     String
+  sizeBytes    Int
+  documentType String
+  note         String?
+  createdAt    DateTime @default(now())
+
+  medicalRecord MedicalRecord?
+  ocrJob        OcrJob?
+}
+
+enum ObservationType {
+  BLOOD_PRESSURE
+  BLOOD_GLUCOSE
+  BMI
+  CHOLESTEROL
+}
+
+// Structured vitals — kept separate from MedicalRecord (which is narrative/document-shaped) so
+// lib/ai/trends.ts can compute a direction (up/down/stable) over time without parsing free text.
+model Observation {
+  id         String          @id @default(cuid())
+  patientId  String
+  patient    Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  type       ObservationType
+  value      Float
+  unit       String
+  note       String?
+  recordedAt DateTime        @default(now())
+}

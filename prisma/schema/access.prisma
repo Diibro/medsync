@@ -1,0 +1,47 @@
+// Module: access — see docs/DB.md. Consent and the doctor's time-boxed clinical session.
+// ConsentCode covers step 1 of the doctor flow (patient-consent code); AccessEvent is only created
+// once both the consent code and the doctor's hospital PIN (step 2) are verified — see
+// docs/ARCHITECTURE.md §3.
+
+enum AccessMethod {
+  CONSENT_CODE
+  EMERGENCY_OVERRIDE
+}
+
+model Consent {
+  id         String    @id @default(cuid())
+  patientId  String
+  patient    Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  hospitalId String?
+  hospital   Hospital? @relation(fields: [hospitalId], references: [id])
+  scope      String
+  grantedAt  DateTime  @default(now())
+  revokedAt  DateTime?
+}
+
+model ConsentCode {
+  id         String        @id @default(cuid())
+  patientId  String
+  patient    Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId   String
+  doctor     DoctorProfile @relation(fields: [doctorId], references: [id])
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime      @default(now())
+}
+
+model AccessEvent {
+  id               String        @id @default(cuid())
+  patientId        String
+  patient          Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId         String
+  doctor           DoctorProfile @relation(fields: [doctorId], references: [id])
+  method           AccessMethod
+  status           String        @default("ACTIVE")
+  startedAt        DateTime      @default(now())
+  expiresAt        DateTime
+  endedAt          DateTime?
+  recordsViewed    String[]
+  flaggedForReview Boolean       @default(false)
+}

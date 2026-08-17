@@ -1,0 +1,19 @@
+// Module: support — messages from people who are stuck or confused, reviewed by platform staff in
+// the admin console. Not tied to a user account: anyone (logged in or not) can send one.
+
+enum ContactMessageStatus {
+  NEW
+  RESOLVED
+}
+
+model ContactMessage {
+  id         String               @id @default(cuid())
+  name       String
+  email      String
+  phone      String?
+  topic      String
+  message    String
+  status     ContactMessageStatus @default(NEW)
+  createdAt  DateTime             @default(now())
+  resolvedAt DateTime?
+}

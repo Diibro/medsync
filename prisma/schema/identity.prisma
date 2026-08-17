@@ -1,0 +1,83 @@
+// Module: identity — see docs/DB.md. Accounts, people, per-hospital staff.
+// Owns the datasource/generator blocks shared by every module file in this folder.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  PATIENT
+  DOCTOR
+  HOSPITAL_ADMIN
+  PLATFORM_STAFF
+  PLATFORM_ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  patient       Patient?
+  doctorProfile DoctorProfile?
+  staffProfile  StaffProfile?
+}
+
+model Patient {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  publicCode        String   @unique
+  fullName          String
+  dateOfBirth       DateTime
+  phone             String?
+  bloodGroup        String?
+  genotype          String?
+  allergies         String[]
+  dataShareResearch Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  externalIdentifiers ExternalIdentifier[]
+  records             MedicalRecord[]
+  documents           Document[]
+  observations        Observation[]
+  consents            Consent[]
+  consentCodes        ConsentCode[]
+  accessEvents        AccessEvent[]
+  aiInsights          AiInsight[]
+}
+
+model DoctorProfile {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName   String
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id])
+  licenseId  String
+  specialty  String?
+  pinHash    String
+  createdAt  DateTime @default(now())
+
+  authoredRecords MedicalRecord[]
+  consentCodes    ConsentCode[]
+  accessEvents    AccessEvent[]
+}
+
+model StaffProfile {
+  id         String    @id @default(cuid())
+  userId     String    @unique
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName   String
+  hospitalId String?
+  hospital   Hospital? @relation(fields: [hospitalId], references: [id])
+  createdAt  DateTime  @default(now())
+}

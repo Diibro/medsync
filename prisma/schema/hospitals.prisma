@@ -1,0 +1,53 @@
+// Module: hospitals — see docs/DB.md. Participating institutions and the patient-identity mapping
+// needed to fetch each one's data. In dev, "hospital" rows point at real HAPI FHIR servers seeded
+// with Synthea-generated patients (see docker-compose.yml, scripts/load-hospital-data.ts) — see
+// docs/PROGRESS.md decisions log.
+
+model Hospital {
+  id   String @id @default(cuid())
+  name String
+
+  // Everything below is optional on purpose — onboarding a hospital should take one field to start,
+  // with the rest filled in as it's known.
+  location        String?
+  contactEmail    String?
+  contactPhone    String?
+  baseUrl         String?
+  apiKey          String? // sent as `Authorization: Bearer <apiKey>` when set — see lib/hospitals/connector.ts
+  connectionNotes String?
+
+  // A hospital can be a branch of another already-onboarded hospital.
+  parentHospitalId String?
+  parentHospital   Hospital?  @relation("HospitalBranches", fields: [parentHospitalId], references: [id])
+  branches         Hospital[] @relation("HospitalBranches")
+
+  agreementSignedAt DateTime?
+  agreementNotes    String?
+
+  // Hospital admins flip this off when their own system is down or being migrated, so MedSync stops
+  // trying to sync against it instead of erroring on every attempt.
+  syncEnabled Boolean  @default(true)
+  isVerified  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  doctors             DoctorProfile[]
+  staff               StaffProfile[]
+  externalIdentifiers ExternalIdentifier[]
+  medicalRecords      MedicalRecord[]
+  consents            Consent[]
+}
+
+model ExternalIdentifier {
+  id            String    @id @default(cuid())
+  patientId     String
+  patient       Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  hospitalId    String
+  hospital      Hospital  @relation(fields: [hospitalId], references: [id])
+  externalId    String
+  linkedAt      DateTime  @default(now())
+  lastSyncedAt  DateTime?
+  lastSyncError String?
+
+  @@unique([hospitalId, externalId])
+  @@unique([hospitalId, patientId])
+}

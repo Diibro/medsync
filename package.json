@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "postinstall": "prisma generate",
     "seed:hospitals": "tsx scripts/load-hospital-data.ts"
   },
   "dependencies": {
@@ -14,6 +15,7 @@
     "@google/genai": "^2.17.1",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
+    "@vercel/blob": "^2.8.0",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
